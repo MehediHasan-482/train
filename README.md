@@ -1,16 +1,38 @@
-# test_project
+# EZ Train - Flutter Authentication App
 
-A new Flutter project.
+A complete Flutter mobile application that implements user authentication with registration and login functionality. This app was developed as part of a Flutter Developer Interview Task.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- ✅ User Registration with validation
+- ✅ User Login with token-based authentication  
+- ✅ Persistent login session using SharedPreferences
+- ✅ Password visibility toggle
+- ✅ Form validation with error messages
+- ✅ Loading indicators for API calls
+- ✅ Clean Material Design UI
+- ✅ Provider state management
+- ✅ Logout functionality
+- ✅ Automatic session persistence
 
-A few resources to get you started if this is your first Flutter project:
+## API Integration
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+The app integrates with the provided backend API:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Base URL:** `https://ez-train.vercel.app`
+- **Endpoints Used:**
+  - `POST /auth/register` - User registration
+  - `POST /auth/login` - User login  
+  - `POST /auth/logout` - User logout
+  - `GET /auth/me` - Get current user info
+
+## Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| Flutter | UI Framework |
+| Dart | Programming Language |
+| Provider | State Management |
+| Dio | HTTP Client |
+| SharedPreferences | Local Storage |
+
