@@ -36,3 +36,6 @@ The app integrates with the provided backend API:
 | Dio | HTTP Client |
 | SharedPreferences | Local Storage |
 
+
+## short demo video of the application
+link: https://youtube.com/shorts/_vQY9bNd6eA
