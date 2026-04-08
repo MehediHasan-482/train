@@ -2,11 +2,40 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test_project/providers/auth_provider.dart';
 import 'login_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _lastLoginTime = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAndSaveLoginTime();
+  }
+
+  Future<void> _loadAndSaveLoginTime() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final previousLogin = prefs.getString('last_login_time') ?? '';
+    final now = DateTime.now();
+    final formatted =
+        '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+
+    await prefs.setString('last_login_time', formatted);
+
+    setState(() {
+      _lastLoginTime = previousLogin.isNotEmpty ? previousLogin : formatted;
+    });
+  }
 
   Future<void> _handleLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -256,6 +285,18 @@ class HomeScreen extends StatelessWidget {
                         indent: 50,
                       ),
                       _infoRow(Icons.email_outlined, 'Email', email),
+                      if (_lastLoginTime.isNotEmpty) ...[
+                        Divider(
+                          color: Colors.white.withOpacity(0.07),
+                          height: 1,
+                          indent: 50,
+                        ),
+                        _infoRow(
+                          Icons.access_time_outlined,
+                          'Last Login',
+                          _lastLoginTime,
+                        ),
+                      ],
                     ],
                   ),
                 ),

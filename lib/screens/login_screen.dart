@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import 'register_screen.dart';
@@ -20,9 +21,50 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _rememberMe = false;
+
+  int _loginAttempts = 0;
+
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    final savedEmail = prefs.getString('saved_email') ?? '';
+    final attempts = prefs.getInt('login_attempts') ?? 0;
+
+    setState(() {
+      _rememberMe = rememberMe;
+      _loginAttempts = attempts;
+      if (rememberMe && savedEmail.isNotEmpty) {
+        _emailController.text = savedEmail;
+      }
+    });
+  }
+
+  Future<void> _handleRememberMe(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _rememberMe = value);
+    await prefs.setBool('remember_me', value);
+    if (!value) {
+      await prefs.remove('saved_email');
+    }
+  }
+
+  Future<void> _incrementLoginAttempts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final attempts = (prefs.getInt('login_attempts') ?? 0) + 1;
+    await prefs.setInt('login_attempts', attempts);
+    setState(() => _loginAttempts = attempts);
+  }
+
+  Future<void> _resetLoginAttempts() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('login_attempts');
+    setState(() => _loginAttempts = 0);
+  }
 
   @override
   void initState() {
@@ -37,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _loadSavedData();
   }
 
   @override
@@ -49,6 +92,21 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_loginAttempts >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Too many failed attempts. Please try again later.',
+          ),
+          backgroundColor: const Color(0xFFFF6584),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     auth.clearMessages();
@@ -59,9 +117,15 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     if (success && mounted) {
+      if (_rememberMe) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_email', _emailController.text.trim());
+      }
+      await _resetLoginAttempts();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('✅ Login successful!'),
+          content: const Text('Login successful!'),
           backgroundColor: const Color(0xFF43E97B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -73,6 +137,8 @@ class _LoginScreenState extends State<LoginScreen>
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    } else {
+      await _incrementLoginAttempts();
     }
   }
 
@@ -133,6 +199,40 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
 
                     const SizedBox(height: 32),
+
+                    if (_loginAttempts >= 3 && _loginAttempts < 5)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_outlined,
+                              color: Colors.orange,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Warning: ${5 - _loginAttempts} attempts remaining',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                     Consumer<AuthProvider>(
                       builder: (context, auth, _) {
@@ -206,6 +306,36 @@ class _LoginScreenState extends State<LoginScreen>
                       validator: (val) => val == null || val.isEmpty
                           ? 'Password is required'
                           : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (val) => _handleRememberMe(val ?? false),
+                            activeColor: const Color(0xFF6C63FF),
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.4),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Remember me',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 32),

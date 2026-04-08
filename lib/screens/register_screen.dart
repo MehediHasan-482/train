@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import 'login_screen.dart';
@@ -26,6 +27,23 @@ class _RegisterScreenState extends State<RegisterScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
+  Future<void> _loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    _nameController.text = prefs.getString('draft_name') ?? '';
+    _emailController.text = prefs.getString('draft_email') ?? '';
+  }
+
+  Future<void> _saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('draft_name', _nameController.text);
+    await prefs.setString('draft_email', _emailController.text);
+  }
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('draft_name');
+    await prefs.remove('draft_email');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +57,9 @@ class _RegisterScreenState extends State<RegisterScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _loadDraft();
+    _nameController.addListener(_saveDraft);
+    _emailController.addListener(_saveDraft);
   }
 
   @override
@@ -64,6 +85,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
 
     if (success && mounted) {
+      await _clearDraft();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Registration successful!'),
